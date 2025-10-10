@@ -50,7 +50,7 @@ func main() {
 	// Start server
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = "8000"
 	}
 	log.Printf("Starting movies microservice on port %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
