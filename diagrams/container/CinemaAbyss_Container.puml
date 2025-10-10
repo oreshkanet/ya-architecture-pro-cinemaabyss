@@ -1,0 +1,99 @@
+@startuml CinemaAbyss_Container_ToBe
+title CinemaAbyss Container Diagram
+
+!include ../c4/C4_Container.puml
+
+' ПОЛЬЗОВАТЕЛИ
+Person_Ext(User, "User", "Пользователь системы:\n— Просматривает каталог фильмов\n— Просмотр фильмов\n— Подключение и оплата подписки")
+Person(Administrator, "Administrator", "Администратор системы:\n— Управление каталогом фильмов\n— Добавление фильмов\n— Администрирование системы")
+
+' ВНЕШНИЕ УСТРОЙСТВА
+System_Ext(PaymentSystem, "Payment System", "Платежная система: проведение платежей пользователей", "HTTP API")
+System_Ext(CinemaOnline, "Cinema Online", "Онлайн-кинотеатры", "HTTP API")
+System_Ext(RecomendationSystem, "Recomendation System", "Внешняя рекомендательная система")
+
+' ОСНОВНАЯ СИСТЕМА
+System_Boundary(CinemaAbyssSystem, "CinemaAbyss System") {
+
+    ' --- Интерфейсы ---
+    Container(WebApp, "Web Application", "Angular, Node.JS", "Web-интерфейс для работы с системой")
+    Container(MobileApp, "Mobile Application", "Kotlin, Swift", "Мобильное приложение для работы с системой")
+    Container(TVApp, "TV Application", "Kotlin", "Приложение для TV")
+    
+    Container(ApiGateway, "API Gateway", "Kong", "Единая точка входа:\n - Маршрутизация запросов\n - Аутентификация через JWT\n - Rate limiting, CORS")
+
+    Rel(WebApp, ApiGateway, "", "HTTPS")
+    Rel(MobileApp, ApiGateway, "", "HTTPS")
+    Rel(TVApp, ApiGateway, "", "HTTPS")
+
+    Rel(Administrator, WebApp, "Администрирование каталога")
+    Rel(User, WebApp, "")
+    Rel(User, MobileApp, "")
+    Rel(User, TVApp, "")
+
+    ' --- ДОМЕН: Управление пользователями ---
+    Container_Boundary(UserDomain, "Управление пользователями") {
+        Container(UserService, "User Service", "Go", "Управление профилями:\n - Регистрация, вход, сброс пароля\n - Хранение настроек интерфейса\n - Работа с OAuth2/JWT")
+        ContainerDb(UsersDatabase, "Users Database", "PostgreSQL", "Хранение учётных данных пользователей системы")
+        
+        Rel(UserService, UsersDatabase, "Чтение/запись данных пользователя", "SQL")
+    }
+
+    ' --- ДОМЕН: Управление каталогом фильмов ---
+    Container_Boundary(MoviesDomain, "Управление каталогом фильмов") {
+        Container(MoviesService, "Movies Service", "Go", "Хранение метаданных фильмов:\n - Чтение/Добавление/Удаление фильма\n - Загрузка видеофайлов\n - Подключение онлайн-кинотеатров")
+        ContainerDb(MoviesDatabase, "Movies Database", "PostgreSQL", "Хранение метаданных видео и структуры каталога")
+        ContainerDb(MoviesStorage, "Movies Storage", "S3 / MinIO", "Хранение видеофайлов")
+        
+        Rel(MoviesService, MoviesDatabase, "Чтение/Запись информации о видео-каталоге", "SQL")
+        Rel(MoviesService, MoviesStorage, "Чтение/Загрузка видеофайлов", "SQL")
+    }
+  
+    ' --- ДОМЕН: Управление платежами ---
+    Container_Boundary(PaymentDomain, "Управление платежами") {
+        Container(PaymentService, "Payment Service", "Go", "Обработка платежей:\n - Создание и обработка платежей по подпискам\n - Интеграция с внешними платежными системами\n - Отслеживание статуса платежа")
+        ContainerDb(PaymentDatabase, "Payment Database", "ClickHouse", "Хранение платежей, их статуса")
+        ContainerQueue(PaymentQueue, "Payment Queue", "Kafka", "Асинхронная доставка данных о статусе оплаты")
+
+        Rel(PaymentService, PaymentDatabase, "Чтение/Запись данных платежей", "SQL")
+        Rel(PaymentService, PaymentQueue, "Публикация событий оплаты", "TCP")
+    }
+
+    ' --- ДОМЕН: Управление подписками ---
+    Container_Boundary(SubscriptionDomain, "Управление подписками") {
+        Container(SubscriptionService, "Subscription Service", "Go", "Управление подписками пользователей:\n - Создание и управление активностью\n - Запросы на оплату\n - Просмотр истории")
+        ContainerDb(SubscriptionDatabase, "Subscription Database", "ClickHouse", "Хранение данных о подписках пользователей")
+
+        Rel(SubscriptionService, SubscriptionDatabase, "Поток событий телеметрии", "TCP")
+    }
+
+    ' --- ДОМЕН: Управление подписками ---
+    Container_Boundary(RecomendationDomain, "Управление платежами") {
+        Container(RecomendationAPI, "Recomendation API", "Go", "API интеграции с рекомендательной системой:\n - Приём потока данных по рекомендациям")
+        Container(RecomendationService, "Recomendation Service", "Go", "Обработка потока данных с рекомендациями для пользователей")
+        ContainerDb(RecomendationDatabase, "Recomendation Database", "PostgreSQL", "Хранение данных о рекомендациях")
+        ContainerQueue(RecomendationQueue, "Recomendation Queue", "Kafka", "Асинхронная доставка данных")
+
+        Rel(RecomendationService, RecomendationDatabase, "Чтение/Запись рекомендаций", "SQL")
+        Rel(RecomendationAPI, RecomendationQueue, "Публикация сообщения с рекомендацией", "TCP")
+        Rel(RecomendationQueue, RecomendationService, "Чтение сообщения с рекомендацией", "TCP")
+    }
+
+    ' Внутренние взаимодействия
+    Rel(ApiGateway, UserService, "Регистрация/Авторизация пользователя", "HTTP")
+    Rel(ApiGateway, MoviesService, "Получение каталога и ссылок на просмотр фильмов", "HTTP")
+    Rel(ApiGateway, SubscriptionService, "Создание подписки и их история", "HTTP")
+    Rel(ApiGateway, RecomendationService, "Получение рекомендаций для пользователя", "HTTP")
+    Rel(ApiGateway, PaymentService, "Оплата подписки", "HTTP")
+    
+    Rel(PaymentQueue, SubscriptionService, "Чтение событий оплаты", "TCP")    
+}
+
+
+' Взаимодействие с внешними системами
+Rel(RecomendationSystem, RecomendationAPI, "Отправка рекомендаций", "HTTP")
+Rel(PaymentService, PaymentSystem, "Отправка команд оплаты, получение статуса оплаты", "HTTP")
+
+Rel(MoviesService, CinemaOnline, "Получение ссылок на просмотр фильмов", "HTTP")
+
+@enduml
