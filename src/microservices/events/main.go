@@ -21,7 +21,7 @@ type MovieEvent struct {
 
 type UserEvent struct {
 	UserId    int    `json:"user_id"`
-	UserName  int    `json:"username"`
+	UserName  string `json:"username"`
 	Action    string `json:"action"`
 	Timestamp string `json:"timestamp"`
 }
@@ -190,7 +190,7 @@ func handleEventMovie(w http.ResponseWriter, r *http.Request, sendToKafka func(c
 
 	if err := sendToKafka(ctx, payload); err != nil {
 		log.Printf("Ошибка отправки в Kafka: %v", err)
-		http.Error(w, "Failed to publish event", http.StatusInternalServerError)
+		http.Error(w, "Failed to publish event: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -218,7 +218,7 @@ func handleEventUser(w http.ResponseWriter, r *http.Request, sendToKafka func(co
 
 	if err := sendToKafka(ctx, payload); err != nil {
 		log.Printf("Ошибка отправки в Kafka: %v", err)
-		http.Error(w, "Failed to publish event", http.StatusInternalServerError)
+		http.Error(w, "Failed to publish event: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -246,7 +246,7 @@ func handleEventPayment(w http.ResponseWriter, r *http.Request, sendToKafka func
 
 	if err := sendToKafka(ctx, payload); err != nil {
 		log.Printf("Ошибка отправки в Kafka: %v", err)
-		http.Error(w, "Failed to publish event", http.StatusInternalServerError)
+		http.Error(w, "Failed to publish event: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
