@@ -35,13 +35,17 @@ type PaymentEvent struct {
 	MethodType string  `json:"method_type"`
 }
 
+type ResponseEvent struct {
+	Status string `json:"status"`
+}
+
 func main() {
 
 	kafkaBrokers := []string{getEnv("KAFKA_BROKERS", "localhost:9092")}
 
-	topicUser := "events-user"
-	topicMovie := "events-movie"
-	topicPayment := "events-payment"
+	topicUser := "user-events"
+	topicMovie := "movie-events"
+	topicPayment := "payment-events"
 
 	handleConsumerMovies(kafkaBrokers, topicMovie, "movies-service-group")
 	handleConsumerUser(kafkaBrokers, topicUser, "user-service-group")
@@ -196,7 +200,9 @@ func handleEventMovie(w http.ResponseWriter, r *http.Request, sendToKafka func(c
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(m)
+	json.NewEncoder(w).Encode(&ResponseEvent{
+		Status: "success",
+	})
 }
 
 func handleEventUser(w http.ResponseWriter, r *http.Request, sendToKafka func(context.Context, []byte) error) {
@@ -224,7 +230,9 @@ func handleEventUser(w http.ResponseWriter, r *http.Request, sendToKafka func(co
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(m)
+	json.NewEncoder(w).Encode(&ResponseEvent{
+		Status: "success",
+	})
 }
 
 func handleEventPayment(w http.ResponseWriter, r *http.Request, sendToKafka func(context.Context, []byte) error) {
@@ -252,5 +260,7 @@ func handleEventPayment(w http.ResponseWriter, r *http.Request, sendToKafka func
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(m)
+	json.NewEncoder(w).Encode(&ResponseEvent{
+		Status: "success",
+	})
 }
