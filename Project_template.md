@@ -145,6 +145,7 @@ jobs:
 Как только сборка отработает и в github registry появятся ваши образы, можно переходить к блоку настройки Kubernetes
 Успешным результатом данного шага является "зеленая" сборка и "зеленые" тесты
 
+![Test CI/CD](./assets/test_cicd1.png)
 
 ### Proxy в Kubernetes
 
@@ -197,6 +198,8 @@ cat .docker/config.json | base64
 ```bash
  .dockerconfigjson: значение в base64 файла ~/.docker/config.json
 ```
+
+![K8S token](./assets/k8s_token.png)
 
 #### Шаг 2
 
@@ -279,6 +282,8 @@ cat .docker/config.json | base64
 
   zookeeper-0                       1/1     Running 
 
+![K8S pods](./assets/k8s_pods.png)
+
   8. Добавим ingress
 
   - добавьте аддон
@@ -288,6 +293,9 @@ cat .docker/config.json | base64
   ```bash
   kubectl apply -f src/kubernetes/ingress.yaml
   ```
+
+![K8S ingress](./assets/k8s_ingress.png)
+
   9. Добавьте в /etc/hosts
   127.0.0.1 cinemaabyss.example.com
 
@@ -299,6 +307,8 @@ cat .docker/config.json | base64
   Вы должны увидеть вывод списка фильмов
   Можно поэкспериментировать со значением   MOVIES_MIGRATION_PERCENT в src/kubernetes/configmap.yaml и убедится, что вызовы movies уходят полностью в новый сервис
 
+
+
   12. Запустите тесты из папки tests/postman
   ```bash
    npm run test:kubernetes
@@ -308,6 +318,17 @@ cat .docker/config.json | base64
 
 #### Шаг 3
 Добавьте сюда скриншота вывода при вызове https://cinemaabyss.example.com/api/movies и  скриншот вывода event-service после вызова тестов.
+
+![K8S movies](./assets/k8s_movies.png)
+
+![K8S test](./assets/k8s_test1.png)
+![K8S test](./assets/k8s_test2.png)
+![K8S test](./assets/k8s_test3.png)
+
+Kafka pod падал из-за создания топиков, вынес в initContainer в сервис Kafka-UI
+```
+
+```
 
 
 ## Задание 4
@@ -366,7 +387,7 @@ kubectl delete  namespace cinemaabyss
 ```
 Запустите 
 ```bash
-helm install cinemaabyss .\src\kubernetes\helm --namespace cinemaabyss --create-namespace
+helm install cinemaabyss ./src/kubernetes/helm --namespace cinemaabyss --create-namespace
 ```
 Если в процессе будет ошибка
 ```code
@@ -383,6 +404,12 @@ minikube tunnel
 Потом вызовите 
 https://cinemaabyss.example.com/api/movies
 и приложите скриншот развертывания helm и вывода https://cinemaabyss.example.com/api/movies
+
+![HELM deploy](./assets/helm_deploy.png)
+
+![HELM getdata](./assets/helm_getdata.png)
+
+![HELM test](./assets/helm_test.png)
 
 
 # Задание 5
