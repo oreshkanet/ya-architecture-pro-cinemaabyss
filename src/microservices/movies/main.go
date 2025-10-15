@@ -61,12 +61,15 @@ func initDB() {
 }
 
 func handleHealth(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("X-APP-NAME", "movies-service")
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]bool{"status": true})
 }
 
 // Movie handlers
 func handleMovies(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("X-APP-NAME", "movies-service")
+
 	switch r.Method {
 	case "GET":
 		if r.URL.Query().Get("id") != "" {

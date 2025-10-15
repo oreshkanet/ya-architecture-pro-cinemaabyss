@@ -8,6 +8,7 @@
 *.out
 /vendor/
 /Godeps/
+tmp
 
 # Go workspace file
 go.work
