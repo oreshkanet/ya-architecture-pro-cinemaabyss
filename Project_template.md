@@ -50,6 +50,9 @@
 ![test](./assets/test_event2.png)
 ![test](./assets/test_event3.png)
 
+При запуске сервиса Events могут происходит ошибки подключения консьюмеров к Kafka. Возможно, Kafka не успела развернуться и инициализировать нужные топики. Поэтому реализован ретрай подключений для консьюмеров: 
+![test](./assets/test_event4.png)
+
 Сообщения в топиках Kafka:
 
 ![Test Kafka](./assets/test_kafka1.png)

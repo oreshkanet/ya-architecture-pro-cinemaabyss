@@ -105,7 +105,7 @@ func handleConsumerUser(kafkaBrokers []string, topic, group string) {
 				continue
 			}
 			// Логируем структурированное событие
-			log.Printf("Получено событие из Kafka: user_id=%d, user_name=%q, action=%q, timestamp=%d",
+			log.Printf("Получено событие из Kafka: user_id=%d, user_name=%q, action=%q, timestamp=%s",
 				event.UserId, event.UserName, event.Action, event.Timestamp)
 		}
 	}()
@@ -121,7 +121,7 @@ func handleConsumerPayment(kafkaBrokers []string, topic, group string) {
 				continue
 			}
 			// Логируем структурированное событие
-			log.Printf("Получено событие из Kafka: payment_id=%d, user_id=%d, amount=%q, status=%q, timestamp=%q, method_type=%q",
+			log.Printf("Получено событие из Kafka: payment_id=%d, user_id=%d, amount=%v, status=%q, timestamp=%q, method_type=%q",
 				event.PaymentId, event.UserId, event.Amount, event.Status, event.Timestamp, event.MethodType)
 		}
 	}()
@@ -144,24 +144,31 @@ func kafkaProducer(brokers []string, topic string) func(context.Context, []byte)
 
 func kafkaConsumer(brokers []string, topic string, groupID string) <-chan []byte {
 	messages := make(chan []byte, 100)
-	reader := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:  brokers,
-		GroupID:  groupID,
-		Topic:    topic,
-		MinBytes: 10e3, // 10KB
-		MaxBytes: 10e6, // 10MB
-	})
 
 	go func() {
 		defer close(messages)
-		defer reader.Close()
+
 		for {
-			msg, err := reader.ReadMessage(context.Background())
-			if err != nil {
-				log.Printf("Ошибка при чтении из Kafka: %v", err)
-				return
+			reader := kafka.NewReader(kafka.ReaderConfig{
+				Brokers:  brokers,
+				GroupID:  groupID,
+				Topic:    topic,
+				MinBytes: 1,
+				MaxBytes: 10e6,
+			})
+
+			for {
+				msg, err := reader.ReadMessage(context.Background())
+				if err != nil {
+					log.Printf("Ошибка при чтении из Kafka: %v", err)
+					reader.Close()
+
+					log.Println("Переподключение к Kafka через 5 секунд...")
+					time.Sleep(5 * time.Second)
+					break
+				}
+				messages <- msg.Value
 			}
-			messages <- msg.Value
 		}
 	}()
 
