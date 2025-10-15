@@ -192,31 +192,6 @@ spec:
       labels:
         app: kafka-ui
     spec:
-      initContainers:
-        - name: create-kafka-topics
-          image: wurstmeister/kafka:2.13-2.7.0
-          command:
-            - /bin/sh
-            - -c
-            - |
-              echo "Waiting for Kafka to be ready..."
-              while ! /opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server kafka:9092 >/dev/null 2>&1; do
-                sleep 5
-              done
-              echo "Kafka is ready. Creating topics..."
-              for topic in movie-events user-events payment-events; do
-                echo "Creating topic: $topic"
-                /opt/kafka/bin/kafka-topics.sh --create \
-                  --bootstrap-server kafka:9092 \
-                  --topic "$topic" \
-                  --partitions 1 \
-                  --replication-factor 1 \
-                  --if-not-exists
-              done
-              echo "All topics created."
-          env:
-            - name: KAFKA_BROKER_API_VERSIONS_TIMEOUT_MS
-              value: "1000"
       containers:
       - name: kafka-ui
         image: provectuslabs/kafka-ui:latest
